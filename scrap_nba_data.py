@@ -36,12 +36,14 @@ def create_basketball_reference_df(link, columns):
     return df
 
 def create_salaries_df(year):
-    html = gets_html(f"https://web.archive.org/web/{year}0501000000/http://www.basketball-reference.com/contracts/players.html")
+    html = gets_html(f"https://web.archive.org/web/{year}0101000000/http://www.basketball-reference.com/contracts/players.html")
     soup = BeautifulSoup(html)
-    columns = soup.find_all('th', class_='poptip')
+    columns = soup.find_all('th', class_=['tooltip','poptip'])
     columns = [c.get_text() for c in columns]
     records_list = scrap_table(soup, table_class='table_container')
     salaries_df = pd.DataFrame.from_records(records_list, columns=columns[1:])
+    if '' in salaries_df.columns:
+        salaries_df.drop(columns='', inplace=True)
     return salaries_df
 
 ### PARSER
