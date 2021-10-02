@@ -60,7 +60,7 @@ def main():
     if not os.path.exists(INPUT_DIRECTORY):
         os.makedirs(INPUT_DIRECTORY)
     
-    free_agents_salary.to_csv(INPUT_DIRECTORY + f'free_agents_salaries_{YEAR}.csv', index=False)
+    free_agents_salary.to_csv(INPUT_DIRECTORY + f'free_agents_salaries.csv', index=False)
     
 if __name__ == "__main__":
     main()

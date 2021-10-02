@@ -79,6 +79,7 @@ NUM_ADVANCED_STATS_COLUMNS = [col for col in ADVANCED_STATS_COLUMNS if col not i
 
 def main():
     # Free agents
+    
     free_agents = create_basketball_reference_df(FREE_AGENTS_LINK, FREE_AGENTS_COLUMNS)
     free_agents = free_agents[free_agents.player.notnull()]
     # Stats per game
