@@ -1,11 +1,56 @@
-import urllib.request
 from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 import csv
 import os
+from io import StringIO
+import tqdm
 
-#TODO
+class FreeAgentTransactionScraper:
+    def __init__(self, start_year:int):
+        self.start_year = start_year
+        self.end_year = start_year + 1
+        self.base_url = "https://www.prosportstransactions.com/basketball/Search/SearchResults.php?Player=&Team=&BeginDate={}-05-01&EndDate={}-04-30&PlayerMovementChkBx=yes&Submit=Search&start={}"
+        self.pages_list = []
+
+    def get_max_page(self, soup):
+        links = soup.find_all('a', href=True)
+        links = [link.text for link in links]
+        max_page = max([int(link) for link in links if link.isdigit()]) - 1
+        return max_page
+
+    def scrape_data(self):
+        n = 0
+        url = self.base_url.format(self.start_year, self.end_year, n)
+        response = requests.get(url)
+        html = response.content
+        soup = BeautifulSoup(html, 'lxml')
+        max_page = self.get_max_page(soup)
+        print(f"Max page: {max_page}")
+
+        for n in tqdm.tqdm(range(0, max_page * 25, 25)):
+            url = self.base_url.format(self.start_year, self.end_year, n)
+            response = requests.get(url)
+            html = response.content
+            soup = BeautifulSoup(html, 'lxml')
+            table = soup.find('table', attrs={'class': 'datatable center'})
+            table_str = str(table)
+
+            # Use StringIO to read the string as if it were a file
+            df = pd.read_html(StringIO(table_str), header=0)[0]
+            free_agents = df[df['Notes'].str.contains('agen', na=False, case=False)]
+            self.pages_list.append(free_agents)
+
+    def get_free_agents(self):
+        return pd.concat(self.pages_list).reset_index(drop=True)
+    
+    def save_to_csv(self, df:pd.DataFrame):
+        filename = f'data/raw/free_agents/transactions/{self.start_year}_free_agents_transactions.csv'
+        # if directory does not exist, create it
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+        df.to_csv(filename, index=False)
+
 
 class FreeAgentScrapper:
     def __init__(self, year: int):
@@ -108,38 +153,6 @@ class ContractScrapper:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(self.headers)
             csvwriter.writerows(self.data)
-
-
-    # def scrap_table(soup, table_class: str):
-    #     # This function should scrape the table data from the soup object
-    #     # and return it as a list of records. Here's a simple mock-up:
-    #     table = soup.find('table', class_=table_class)
-    #     records = []
-    #     if table:
-    #         rows = table.find_all('tr')
-    #         for row in rows:
-    #             cols = row.find_all('td')
-    #             records.append([col.get_text(strip=True) for col in cols])
-    #     return records
-
-    # def scrap_contracts(self):
-    #     # Get the HTML content from the specified year using the Wayback Machine URL format
-    #     html = self.gets_html()
-    #     soup = BeautifulSoup(html, 'html.parser')
-        
-    #     # Extract the table headers
-    #     columns = soup.find_all('th', class_=['tooltip', 'poptip'])
-    #     columns = [c.get_text() for c in columns]
-    #     print(f"Columns: {columns}")
-        
-    #     # Scrape the table data
-    #     records_list = scrap_table(soup, table_class='table_container')
-        
-    #     # Create a DataFrame from the records
-    #     contracts_df = pd.DataFrame.from_records(records_list, columns=columns[1:])
-    #     return contracts_df.dropna(how='all')
-
-
 
 
 class NBAStatsScraper:
